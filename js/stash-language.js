@@ -8,8 +8,8 @@ function registerStashLanguage() {
     // Monarch tokenizer
     monaco.languages.setMonarchTokensProvider('stash', {
         keywords: [
-            'let', 'const', 'fn', 'struct', 'enum', 'interface', 'if', 'else', 'while', 'do',
-            'for', 'in', 'return', 'break', 'continue', 'try', 'catch', 'finally',
+            'let', 'const', 'fn', 'struct', 'enum', 'interface', 'extend', 'if', 'else', 'while', 'do',
+            'for', 'in', 'return', 'break', 'continue', 'try', 'catch', 'finally', 'retry', 'onRetry', 'until',
             'throw', 'switch', 'case', 'default', 'as', 'import',
             'async', 'await', 'spawn', 'typeof', 'delete', 'match'
         ],
@@ -23,15 +23,15 @@ function registerStashLanguage() {
 
         namespaces: [
             'arr', 'dict', 'str', 'math', 'time', 'json', 'fs', 'path',
-            'env', 'sys', 'http', 'crypto', 'io', 'conv', 'process', 'log',
-            'term', 'store', 'encoding', 'ini', 'config', 'args', 'tpl',
+            'env', 'sys', 'http', 'crypto', 'io', 'conv', 'process',
+            'term', 'encoding', 'ini', 'config', 'args', 'tpl',
             'test', 'assert'
         ],
 
         builtinFunctions: ['println', 'print', 'input', 'sleep', 'exit', 'error'],
 
         operators: [
-            '??=', '&&', '||', '??', '?.', '=>', '..', '|>',
+            '??=', '&&', '||', '??', '?.', '=>', '...', '..', '|>',
             '==', '!=', '<=', '>=', '+=', '-=', '*=', '/=', '%=',
             '++', '--', '->', '&>>', '&>', '>>', '2>>', '2>',
             '+', '-', '*', '/', '%', '<', '>', '!', '=', '|', '?'
@@ -53,7 +53,7 @@ function registerStashLanguage() {
                 [/\/\/.*$/, 'comment'],
 
                 // Command literals: $(...) and $>(...)
-                [/\$>?\(/, 'metatag', '@command'],
+                [/\$!?>?\(/, 'metatag', '@command'],
 
                 // Triple-quoted interpolated strings: $"""..."""
                 [/\$"""/, 'string', '@tripleInterpolatedString'],
@@ -67,6 +67,19 @@ function registerStashLanguage() {
                 // Regular strings: "..."
                 [/"/, 'string', '@string'],
 
+                // Semver literal (@v1.2.3, @v1.0.0-beta.2)
+                [/[@]v[0-9]+\.(?:[xX*]|[0-9]+(?:\.(?:[xX*]|[0-9]+))?(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)/, 'number'],
+
+                // IP address literals (@192.168.1.1, @::1)
+                [/[@](?:[0-9]{1,3}\.){3}[0-9]{1,3}(?:\/[0-9]{1,2})?/, 'number'],
+                [/[@](?:[0-9a-fA-F]*:[0-9a-fA-F:]+(?:%[a-zA-Z0-9]+)?(?:\/[0-9]{1,3})?)/, 'number'],
+
+                // Duration literals (5s, 2h30m, 500ms)
+                [/\b[0-9][0-9_]*(?:\.[0-9][0-9_]*)?(?:ms|[smhd])(?:[0-9]+(?:ms|[smhd]))*\b/, 'number'],
+
+                // Byte-size literals (100B, 1.5MB, 2GB)
+                [/\b[0-9][0-9_]*(?:\.[0-9][0-9_]*)?(?:TB|GB|MB|KB|B)\b/, 'number'],
+
                 // Numbers (hex, octal, binary before float before int)
                 [/\b0[xX][0-9a-fA-F][0-9a-fA-F_]*\b/, 'number.hex'],
                 [/\b0[oO][0-7][0-7_]*\b/, 'number.octal'],
@@ -76,9 +89,11 @@ function registerStashLanguage() {
 
                 // self keyword
                 [/\bself\b/, 'variable.language'],
+                // attempt keyword (retry block implicit variable)
+                [/\battempt\b/, 'variable.language'],
 
                 // is TYPE pattern
-                [/\b(is\s+)(int|float|string|bool|null|array|dict|struct|enum|function|range|namespace|Error)\b/, ['keyword', 'type']],
+                [/\b(is\s+)(int|float|string|bool|null|array|dict|struct|enum|function|range|namespace|Error|duration|bytes|ip|semver|Future)\b/, ['keyword', 'type']],
 
                 // Identifiers and keywords
                 [/\b[a-zA-Z_]\w*(?=\s*\()/, {
